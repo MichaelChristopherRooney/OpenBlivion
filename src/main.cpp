@@ -1,10 +1,14 @@
-#pragma once
+#include <src\engine.h>
 
-#include <src\bsa\bsa_archive.h>
+int main(int argc, char** argv) {
 
-int main(void) {
+	engine game;
 
-	struct bsa_archive *archive = malloc(sizeof(struct bsa_archive));
-	bsa_file_load(archive, "C:\\Program Files (x86)\\Bethesda Softworks\\Oblivion\\Data\\Oblivion - Meshes.bsa");
+	if (!game.run()) {
+		printf("Press any key to exit...\n");
+		getchar();
+	}
+
 
 }
+
