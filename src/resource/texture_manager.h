@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-#include <src\bsa\bsa_manager.h>
+#include <src\resource\bsa_manager.h>
 
 #define FOURCC_DXT1 0x31545844 // DXT1
 #define FOURCC_DXT3 0x33545844 // DXT3

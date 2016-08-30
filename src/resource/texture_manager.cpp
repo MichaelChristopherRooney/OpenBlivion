@@ -1,4 +1,4 @@
-#include <src\renderer\texture_manager.h>
+#include <src\resource\texture_manager.h>
 
 std::unordered_map<std::string, GLuint> texture_manager::textures = {};
 

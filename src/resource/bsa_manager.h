@@ -2,8 +2,9 @@
 
 #include <cstdint>
 #include <unordered_map>
+#include <Windows.h>
 
-#include <src\bsa\bsa_archive.h>
+#include <src\resource\bsa.h>
 
 class bsa_manager {
 
@@ -15,8 +16,12 @@ public:
 
 private:
 
+	
 	static std::unordered_map<std::string, struct bsa_asset *> assets;
+	static std::unordered_map<std::string, bsa *> bsas;
 
-	static bool load_archive(const char *file_path);
+	static bool bsa_manager::load_all_archives(const char *path);
+	static bool load_archive(const char *base_path);
+	static bool is_bsa(const char *str);
 
 };

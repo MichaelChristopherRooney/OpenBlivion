@@ -2,9 +2,9 @@
 
 // for reference documentation see: http://www.uesp.net/wiki/Tes4Mod:BSA_File_Format (8th November 2015 revision)
 
-#include <src\bsa\bsa_archive.h>
+#include <src\resource\bsa.h>
 
-bool bsa_archive::load(const char *file_path, std::unordered_map<std::string, struct bsa_asset *> *asset_map) {
+bool bsa::load(const char *file_path, std::unordered_map<std::string, struct bsa_asset *> *asset_map) {
 
 	fp = fopen(file_path, "rb");
 	if (fp == NULL) {
@@ -40,7 +40,7 @@ bool bsa_archive::load(const char *file_path, std::unordered_map<std::string, st
 
 }
 
-void bsa_archive::load_file_record_blocks() {
+void bsa::load_file_record_blocks() {
 
 	uint32_t file_record_blocks_size = header->folder_count * sizeof(struct bsa_file_record_block);
 	file_record_blocks = (struct bsa_file_record_block *) malloc(file_record_blocks_size);
@@ -70,7 +70,7 @@ void bsa_archive::load_file_record_blocks() {
 the bsa archive contains all file names in one block, delimited by '\0'
 this function loads that block and extracts each file name from the block
 */
-void bsa_archive::load_file_names() {
+void bsa::load_file_names() {
 
 	uint32_t total_file_name_length = header->total_file_name_length;
 
@@ -103,7 +103,7 @@ now we have all the information we need to work with an asset
 however this information is scattered throughout memory and different file structures
 here all information for a file is organised into a single asset structure
 */
-void bsa_archive::organise_assets(std::unordered_map<std::string, struct bsa_asset *> *asset_map) {
+void bsa::organise_assets(std::unordered_map<std::string, struct bsa_asset *> *asset_map) {
 
 	assets = (struct bsa_asset *) malloc(header->file_count * sizeof(struct bsa_asset));
 
@@ -117,27 +117,13 @@ void bsa_archive::organise_assets(std::unordered_map<std::string, struct bsa_ass
 			struct bsa_file_record *cur_file_record = &file_record_blocks[i].file_records[n];
 			char *cur_file_name = file_names[file_index];
 
-			char *file_path = (char *) malloc(strlen(cur_folder_path) + strlen(cur_file_name) + 2); // +2 for "\" and '\0'
+			char *file_path = (char *) malloc(strlen(cur_folder_path) + strlen(cur_file_name) + 2); // +2 for "\\" and '\0'
 
 			strcpy(file_path, cur_folder_path);
 			strcat(file_path, "\\");
 			strcat(file_path, cur_file_name);
-
-			// this code block determines if the file is compressed or not
-			// see the documentation link at the top of this file for details
-			if ((cur_file_record->size & (1 << 30)) != 0) {
-				if (header->flags_1.compressed_by_default) {
-					cur_asset->compressed_size = -1; // mark that the file is not compressed
-				} else {
-					// TODO: investigate why the -4 is needed
-					cur_asset->compressed_size = cur_file_record->size - 4;
-				}
-			} else if (header->flags_1.compressed_by_default) {
-				// TODO: investigate why the -4 is needed
-				cur_asset->compressed_size = cur_file_record->size - 4;
-			} else {
-				cur_asset->compressed_size = -1;
-			}
+			
+			set_asset_compressed_size(cur_asset, cur_file_record);
 
 			fseek(fp, cur_file_record->offset, SEEK_SET);
 			fread(&cur_asset->original_size, sizeof(uint32_t), 1, fp);
@@ -159,11 +145,32 @@ void bsa_archive::organise_assets(std::unordered_map<std::string, struct bsa_ass
 
 }
 
+void bsa::set_asset_compressed_size(struct bsa_asset *cur_asset, struct bsa_file_record *cur_file_record) {
+
+	// see the documentation link at the top of this file 
+	// for details about how these sizes are determined
+
+	if ((cur_file_record->size & (1 << 30)) != 0) {
+		if (header->flags_1.compressed_by_default) {
+			cur_asset->compressed_size = -1; // mark that the file is not compressed
+		} else {
+			// TODO: investigate why the -4 is needed
+			cur_asset->compressed_size = cur_file_record->size - 4;
+		}
+	} else if (header->flags_1.compressed_by_default) {
+		// TODO: investigate why the -4 is needed
+		cur_asset->compressed_size = cur_file_record->size - 4;
+	} else {
+		cur_asset->compressed_size = -1;
+	}
+
+}
+
 /*
 now that all information for a file is in the asset structure
 we can free the memory used by the other structures
 */
-void bsa_archive::free_unneeded_data() {
+void bsa::free_unneeded_data() {
 
 	for (int i = 0; i < header->folder_count; i++) {
 		free(file_record_blocks[i].file_records);

@@ -1,6 +1,7 @@
-#include <src\bsa\bsa_manager.h>
+#include <src\resource\bsa_manager.h>
 
 std::unordered_map<std::string, struct bsa_asset *> bsa_manager::assets = {};
+std::unordered_map<std::string, bsa *> bsa_manager::bsas = {};
 
 bool bsa_manager::init() {
 
@@ -10,20 +11,66 @@ bool bsa_manager::init() {
 		return false;
 	}
 
+	//if (!load_all_archives("C:\\Program Files(x86)\\Bethesda Softworks\\Oblivion\\Data\\*.bsa")) {
+	//	return false;
+	//}
+
 	return true;
 
 }
+/*
+// TODO: use wchar_t instead
+bool bsa_manager::load_all_archives(const char *base_path) {
+
+	WIN32_FIND_DATAA cur_entry;
+	HANDLE cur_handle = FindFirstFileA(base_path, &cur_entry);
+
+	do {
+		// ignore "." and ".." directories
+		if (strcmp(cur_entry.cFileName, ".") != 0 && strcmp(cur_entry.cFileName, "..") != 0) {
+			// found a directory, recursively search through it
+			if (cur_entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+				char dir_path[2048];
+				sprintf(dir_path, "%s\%s", base_path, cur_entry.cFileName);
+				printf("Entering directory %s\n", dir_path);
+				load_all_archives(dir_path);
+			} else if (is_bsa(cur_entry.cFileName)) { // don't list backups
+				char file_path[2048];
+				sprintf(file_path, "%s%s", base_path, cur_entry.cFileName);
+				printf("Loading archive %s\n", file_path);
+				if (!load_archive(file_path)) {
+					return false;
+				}
+			}
+		}
+	} while (FindNextFile(cur_handle, &cur_entry));
+
+	return true;
+
+}
+
+bool bsa_manager::is_bsa(const char *str) {
+
+	uint32_t len = strlen(str);
+	const char * testString = str + len - 5;
+	if (strcmp(testString, ".bsa") == 0) {
+		return true;
+	}
+	return false;
+
+}
+*/
 
 bool bsa_manager::load_archive(const char *file_path) {
 
 	const std::string string_key = file_path;
 
-	bsa_archive *arch = new bsa_archive;
+	bsa *arch = new bsa;
 	if (!arch->load(file_path, &assets)) {
 		return false;
 	}
 	
-	// TODO: investigate deleting un-needed archive data
+	//bsas.emplace(file_path, arch);
 
 	return true;
 

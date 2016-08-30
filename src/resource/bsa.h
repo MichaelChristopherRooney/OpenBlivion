@@ -72,7 +72,7 @@ struct bsa_header {
 	} flags_2;
 };
 
-class bsa_archive {
+class bsa {
 
 public:
 
@@ -84,15 +84,16 @@ public:
 
 private:
 
-	void load_file_record_blocks();
-	void load_file_names();
-	void organise_assets(std::unordered_map<std::string, struct bsa_asset *> *asset_map);
-	void free_unneeded_data();
-	
 	struct bsa_header *header;
 	struct bsa_folder_record *folder_records;
 	struct bsa_file_record_block *file_record_blocks;
 	char **file_names;
+
+	void load_file_record_blocks();
+	void load_file_names();
+	void organise_assets(std::unordered_map<std::string, struct bsa_asset *> *asset_map);
+	void set_asset_compressed_size(struct bsa_asset *cur_asset, struct bsa_file_record *cur_file_record);
+	void free_unneeded_data();
 
 };
 

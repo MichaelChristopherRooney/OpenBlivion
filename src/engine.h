@@ -9,11 +9,11 @@
 #include <include\glm\glm.hpp>
 #include <include\glm\ext.hpp>
 
-#include <src\bsa\bsa_manager.h>
+#include <src\resource\bsa_manager.h>
 #include <src\config\config.h>
 #include <src\renderer\camera.h>
 #include <src\renderer\shader.h>
-#include <src\renderer\texture_manager.h>
+#include <src\resource\texture_manager.h>
 
 class engine {
 
