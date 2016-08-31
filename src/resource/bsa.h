@@ -96,8 +96,3 @@ private:
 	void free_unneeded_data();
 
 };
-
-
-
-
-

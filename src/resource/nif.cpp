@@ -8,6 +8,18 @@ bool nif::load(const char *path) {
 		return false;
 	}
 
+	load_header();
+
+	// TODO: figure out a good way of loading all ni_objects in the file
+	blocks = malloc(sizeof(void *) * h->num_blocks);
+	load_root();
+	
+
+	return true;
+}
+
+void nif::load_header() {
+
 	h = new nif_header();
 	fread(h, 1, NIF_HEADER_EXPORT_INFO_START, fp);
 
@@ -19,7 +31,6 @@ bool nif::load(const char *path) {
 
 	fread(&h->unknown_2, sizeof(uint32_t), 1, fp);
 
-	return true;
 }
 
 // export info can be of varying lengths
@@ -59,5 +70,51 @@ void nif::load_block_types() {
 		h->block_types[i][str_size] = '\0';
 		printf("%s\n", h->block_types[i]);
 	}
+
+}
+
+void nif::load_root() {
+
+	root = new ni_node();
+
+	fread(&root->name_len, sizeof(uint32_t), 1, fp);
+	root->name = (char *)malloc(root->name_len + 1); //+1 for '\0'
+	root->name[root->name_len] = '\0';
+	fread(root->name, sizeof(uint8_t), root->name_len, fp);
+
+	fread(&root->num_extra_data, sizeof(uint32_t), 1, fp);
+	if (root->num_extra_data > 0) {
+		root->extra_data = (int32_t *)malloc(root->num_extra_data);
+		fread(root->extra_data, sizeof(int32_t), root->num_extra_data, fp);
+	}
+	
+	// TODO: merge this into a single fread call
+	fread(&root->controller, sizeof(int32_t), 1, fp);
+	fread(&root->flags, sizeof(uint16_t), 1, fp);
+	fread(root->translation, sizeof(uint32_t), 3, fp);
+	fread(root->rotation, sizeof(uint32_t), 9, fp);
+	fread(&root->scale, sizeof(uint32_t), 1, fp);
+
+	fread(&root->num_properties, sizeof(uint32_t), 1, fp);
+	if (root->num_properties != 0) {
+		root->properties = (int32_t *)malloc(sizeof(int32_t) * root->num_properties);
+		fread(root->properties, sizeof(int32_t), root->num_properties, fp);
+	}
+
+	fread(&root->collision_object, sizeof(int32_t), 1, fp);
+
+	fread(&root->num_children, sizeof(uint32_t), 1, fp);
+	if (root->num_children != 0) {
+		root->children = (int32_t *)malloc(sizeof(int32_t) * root->num_children);
+		fread(root->children, sizeof(int32_t), root->num_children, fp);
+	}
+
+	fread(&root->num_effects, sizeof(uint32_t), 1, fp);
+	if (root->num_effects != 0) {
+		root->effects = (int32_t *)malloc(sizeof(int32_t) * root->num_effects);
+		fread(root->effects, sizeof(int32_t), root->num_effects, fp);
+	}
+
+	int a = 0;
 
 }

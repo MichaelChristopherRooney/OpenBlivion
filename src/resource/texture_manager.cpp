@@ -67,4 +67,3 @@ void texture_manager::unload_dds(const std::string file_path) {
 	glDeleteTextures(1, &texture_id); // TODO: is there more that needs to be done here to ensure the texture is unloaded from VRAM?
 
 }
-
