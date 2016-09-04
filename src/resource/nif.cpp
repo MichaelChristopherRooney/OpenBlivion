@@ -33,7 +33,6 @@ void nif::load_header() {
 
 void nif::free_header() {
 
-	
 	free(h->creator);
 	free(h->export_info_1);
 	free(h->export_info_2);
@@ -44,24 +43,21 @@ void nif::free_header() {
 		free(h->block_types);
 	}
 	free(h->block_type_indexes);
-	free(h->header_str);
+
 }
 
 // export info can be of varying lengths
 // so we must process data from the file
 void nif::load_export_info() {
 
-	// get creator string length and load the string
 	fread(&h->creator_len, sizeof(uint8_t), 1, fp);
 	h->creator = (char *)malloc(h->creator_len);
 	fread(h->creator, sizeof(uint8_t), h->creator_len, fp);
 
-	// get export info 1 length and load the string
 	fread(&h->export_info_1_len, sizeof(uint8_t), 1, fp);
 	h->export_info_1 = (char *)malloc(h->export_info_1_len);
 	fread(h->export_info_1, sizeof(uint8_t), h->export_info_1_len, fp);
 
-	// get export info 2 length and load the string
 	fread(&h->export_info_2_len, sizeof(uint8_t), 1, fp);
 	h->export_info_2 = (char *)malloc(h->export_info_2_len);
 	fread(h->export_info_2, sizeof(uint8_t), h->export_info_2_len, fp);
@@ -74,7 +70,7 @@ void nif::load_export_info() {
 // the block type indexes are also stored sequentially
 void nif::load_block_data() {
 
-	fread(&h->num_block_types, sizeof(uint16_t), 1, fp); // get num block types
+	fread(&h->num_block_types, sizeof(uint16_t), 1, fp);
 	h->block_types = (char **)malloc(h->num_block_types * sizeof(uint16_t *));
 	for (uint16_t i = 0; i < h->num_block_types; i++) {
 		uint32_t str_size = 0;
@@ -84,7 +80,6 @@ void nif::load_block_data() {
 		h->block_types[i][str_size] = '\0';
 		printf("%s\n", h->block_types[i]);
 	}
-
 	h->block_type_indexes = (uint16_t *)malloc(h->num_blocks * sizeof(uint16_t));
 	fread(h->block_type_indexes, sizeof(uint16_t), h->num_blocks, fp);
 
@@ -131,7 +126,5 @@ void nif::load_root() {
 		root->effects = (int32_t *)malloc(sizeof(int32_t) * root->num_effects);
 		fread(root->effects, sizeof(int32_t), root->num_effects, fp);
 	}
-
-	int a = 0;
 
 }
