@@ -94,3 +94,5 @@ $RECYCLE.BIN/
 *.log
 *.pdb
 *.idb
+
+/Debug

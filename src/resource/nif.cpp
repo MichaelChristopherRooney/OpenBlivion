@@ -14,23 +14,37 @@ bool nif::load(const char *path) {
 	blocks = malloc(sizeof(void *) * h->num_blocks);
 	load_root();
 	
-
+	free_header();
 	return true;
 }
 
 void nif::load_header() {
 
-	h = new nif_header();
+	h = (struct nif_header*)malloc(sizeof(struct nif_header));
 	fread(h, 1, NIF_HEADER_EXPORT_INFO_START, fp);
+	h->header_str[NIF_HEADER_STRING_LENGTH - 1] = '\0'; // replace '\n' with '\0'
 
 	load_export_info();
-	load_block_types();
-
-	h->block_type_indexes = (uint16_t *)malloc(h->num_blocks);
-	fread(h->block_type_indexes, sizeof(uint16_t), h->num_blocks, fp);
+	load_block_data();
 
 	fread(&h->unknown_2, sizeof(uint32_t), 1, fp);
 
+}
+
+void nif::free_header() {
+
+	
+	free(h->creator);
+	free(h->export_info_1);
+	free(h->export_info_2);
+	if (h->num_block_types > 0) {
+		for (uint32_t i = 0; i < h->num_block_types; i++) {
+			free(h->block_types[i]);
+		}
+		free(h->block_types);
+	}
+	free(h->block_type_indexes);
+	free(h->header_str);
 }
 
 // export info can be of varying lengths
@@ -55,27 +69,30 @@ void nif::load_export_info() {
 }
 
 // the length of each block type string is stored before the string data
-// the length and string is stored sequentially, so we can read them easily
+// these lengths and strings are stored sequentially, so we can read them easily
 // the strings are not null-terminated so we must terminate them manually
-void nif::load_block_types() {
+// the block type indexes are also stored sequentially
+void nif::load_block_data() {
 
 	fread(&h->num_block_types, sizeof(uint16_t), 1, fp); // get num block types
-	h->block_types = (char **)malloc(h->num_block_types);
-
+	h->block_types = (char **)malloc(h->num_block_types * sizeof(uint16_t *));
 	for (uint16_t i = 0; i < h->num_block_types; i++) {
 		uint32_t str_size = 0;
 		fread(&str_size, sizeof(uint32_t), 1, fp);
-		h->block_types[i] = (char *)malloc(str_size + 1); // +1 for \0
+		h->block_types[i] = (char *)malloc(str_size + 1); // +1 for '\0'
 		fread(h->block_types[i], sizeof(uint8_t), str_size, fp);
 		h->block_types[i][str_size] = '\0';
 		printf("%s\n", h->block_types[i]);
 	}
 
+	h->block_type_indexes = (uint16_t *)malloc(h->num_blocks * sizeof(uint16_t));
+	fread(h->block_type_indexes, sizeof(uint16_t), h->num_blocks, fp);
+
 }
 
 void nif::load_root() {
 
-	root = new ni_node();
+	root = (struct ni_node*)malloc(sizeof(struct ni_node));
 
 	fread(&root->name_len, sizeof(uint32_t), 1, fp);
 	root->name = (char *)malloc(root->name_len + 1); //+1 for '\0'
