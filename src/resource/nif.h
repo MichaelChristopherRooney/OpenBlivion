@@ -43,4 +43,10 @@ private:
 	void load_block_data();
 	void load_root();
 	void free_header();
+	void load_bsx_flags();
+	void load_ni_string_extra_data();
+	void load_bhk_convex_vertices_shape();
+	void load_bhk_rigid_body();
+	void load_bhk_collision_object();
+	void load_ni_tri_strips();
 };

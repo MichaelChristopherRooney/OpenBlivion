@@ -128,3 +128,99 @@ void nif::load_root() {
 	}
 
 }
+
+/*
+	TODO:
+	for now all of this loading code uses multiple fread calls
+	these will need to be consolidated into as few calls as possible
+	once the correctness of the data structures has been verified 
+	(in particular once sizes have been confirmed)
+	then they will need to be converted to memcpy calls 
+	once data is coming from the bsa manager
+*/
+
+void nif::load_bsx_flags() {
+
+	struct bsx_flags *node = (struct bsx_flags*)malloc(sizeof(struct bsx_flags));
+	fread(&node->name_len, sizeof(uint32_t), 1, fp);
+	node->name = (char *)malloc(node->name_len + 1); //+1 for '\0'
+	node->name[node->name_len] = '\0';
+	fread(node->name, sizeof(uint8_t), node->name_len, fp);
+	fread(&node->flags, sizeof(uint32_t), 1, fp);
+
+}
+
+void nif::load_ni_string_extra_data() {
+
+	struct ni_string_extra_data *node = (struct ni_string_extra_data*)malloc(sizeof(struct ni_string_extra_data));
+	fread(&node->name_len, sizeof(uint32_t), 1, fp);
+	node->name = (char *)malloc(node->name_len + 1); //+1 for '\0'
+	node->name[node->name_len] = '\0';
+	fread(node->name, sizeof(uint8_t), node->name_len, fp);
+	fread(&node->data_len, sizeof(uint32_t), 1, fp);
+	node->data = (char *)malloc(node->data_len + 1); //+1 for '\0'
+	node->data[node->data_len] = '\0';
+	fread(node->data, sizeof(uint8_t), node->data_len, fp);
+
+}
+
+void nif::load_bhk_convex_vertices_shape() {
+
+	struct bhk_convex_vertices_shape *node = (struct bhk_convex_vertices_shape*)malloc(sizeof(struct bhk_convex_vertices_shape));
+	fread(&node->material, sizeof(uint32_t), 1, fp);
+	fread(&node->radius, sizeof(float), 1, fp);
+	fread(node->unknown, sizeof(float), BCVS_UNKNOWN_FLOAT_SIZE, fp);
+	fread(&node->num_vertices, sizeof(uint32_t), 1, fp);
+	node->vertices = (float *)malloc(node->num_vertices * sizeof(float));
+	fread(node->vertices, sizeof(float), node->num_vertices, fp);
+	fread(&node->num_normals, sizeof(uint32_t), 1, fp);
+	node->normals = (float *)malloc(node->num_normals * sizeof(float));
+	fread(node->normals, sizeof(float), node->num_normals, fp);
+
+}
+
+void nif::load_bhk_rigid_body() {
+	// TODO
+}
+
+void nif::load_bhk_collision_object() {
+
+	struct bhk_collision_object *node = (struct bhk_collision_object*)malloc(sizeof(struct bhk_collision_object));
+	fread(&node->target, sizeof(uint32_t), 1, fp);
+	fread(&node->unknown_short, sizeof(uint16_t), 1, fp);
+	fread(&node->body, sizeof(uint32_t), 1, fp);
+
+}
+
+void nif::load_ni_tri_strips() {
+
+	struct ni_tri_strips *node = (struct ni_tri_strips*)malloc(sizeof(struct ni_tri_strips));
+	fread(&node->name_len, sizeof(uint32_t), 1, fp);
+	node->name = (char *)malloc(node->name_len + 1); //+1 for '\0'
+	node->name[node->name_len] = '\0';
+	fread(node->name, sizeof(uint8_t), node->name_len, fp);
+	fread(&node->num_extra_data, sizeof(uint32_t), 1, fp);
+	if (node->num_extra_data > 0) {
+		node->extra_data = (uint32_t *)malloc(node->num_extra_data * sizeof(uint32_t));
+		fread(node->extra_data, sizeof(uint32_t), node->num_extra_data, fp);
+	} else {
+		node->extra_data = NULL;
+	}
+	fread(&node->controller, sizeof(uint32_t), 1, fp);
+	fread(&node->flags, sizeof(uint32_t), 1, fp);
+	fread(node->translation, sizeof(float), NI_VEC_THREE_SIZE, fp);
+	fread(node->rotation, sizeof(float), NI_3_3_MAT_SIZE, fp);
+	fread(&node->scale, sizeof(float), 1, fp);
+	fread(&node->num_properties, sizeof(uint32_t), 1, fp);
+	if (node->num_properties > 0) {
+		node->properties = (uint32_t *)malloc(node->num_properties * sizeof(uint32_t));
+		fread(node->properties, sizeof(uint32_t), node->num_properties, fp);
+	} else {
+		node->properties = NULL;
+	}
+	fread(&node->collision_object, sizeof(uint32_t), 1, fp);
+	fread(&node->data, sizeof(uint32_t), 1, fp);
+	fread(&node->skin_instance, sizeof(uint32_t), 1, fp);
+	fread(&node->has_shader, sizeof(uint8_t), 1, fp);
+
+}

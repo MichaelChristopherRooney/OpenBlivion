@@ -2,6 +2,10 @@
 
 #include <cstdint>
 
+#define NI_VEC_THREE_SIZE 3
+#define NI_3_3_MAT_SIZE 9
+#define BCVS_UNKNOWN_FLOAT_SIZE 6
+
 struct bsx_flags {
 	uint32_t name_len; // TODO: is this always 3?
 	char * name;
@@ -22,15 +26,15 @@ struct ni_binary_extra_data {
 	uint8_t data;
 };
 
-# define BCVS_VEC_SIZE 4
+
 struct bhk_convex_vertices_shape {
 	uint32_t material;
 	float radius;
-	float unknown[6];
+	float unknown[BCVS_UNKNOWN_FLOAT_SIZE];
 	uint32_t num_vertices;
-	float **vertices; // TODO: calloc this
+	float *vertices;
 	uint32_t num_normals;
-	float **normals;
+	float *normals;
 };
 
 struct bhk_rigid_body {
@@ -50,8 +54,8 @@ struct ni_tri_strips {
 	uint32_t *extra_data;
 	uint32_t controller;
 	uint32_t flags;
-	float translation[3];
-	float rotation[9];
+	float translation[NI_VEC_THREE_SIZE];
+	float rotation[NI_3_3_MAT_SIZE];
 	float scale;
 	uint32_t num_properties;
 	uint32_t *properties;
@@ -67,10 +71,10 @@ struct ni_material_property {
 	uint32_t num_extra_data;
 	uint32_t *extra_data_list;
 	uint32_t controller;
-	float ambient[3];
-	float diffuse[3];
-	float specular[3];
-	float emissive[3];
+	float ambient[NI_VEC_THREE_SIZE];
+	float diffuse[NI_VEC_THREE_SIZE];
+	float specular[NI_VEC_THREE_SIZE];
+	float emissive[NI_VEC_THREE_SIZE];
 	float glossiness;
 	float alpha;
 };
@@ -130,7 +134,7 @@ struct ni_tri_strips_data {
 	float *vertices;
 	uint8_t has_normals;
 	float *normals;
-	float center[3];
+	float center[NI_VEC_THREE_SIZE];
 	float radius;
 	uint8_t has_vertex_colours;
 	float *vertex_colours;
@@ -145,8 +149,8 @@ struct ni_node {
 	int32_t controller;
 	uint16_t flags;
 	uint16_t unknown_short;
-	float translation[3];
-	float rotation[9];
+	float translation[NI_VEC_THREE_SIZE];
+	float rotation[NI_3_3_MAT_SIZE];
 	float scale;
 	uint32_t num_properties;
 	int32_t *properties;
