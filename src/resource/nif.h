@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
+#include <include\glm\glm.hpp>
 #include <src/resource/nif_objects.h>
 
 #define NIF_HEADER_STRING_LENGTH 0x27
@@ -36,17 +38,16 @@ public:
 	bool load(const char *path);
 private:
 	nif_header *h;
-	void *blocks;
-	ni_node *root;
+	void **blocks;
 	void load_header();
 	void load_export_info();
 	void load_block_data();
-	void load_root();
+	void * load_ni_node();
 	void free_header();
-	void load_bsx_flags();
-	void load_ni_string_extra_data();
-	void load_bhk_convex_vertices_shape();
-	void load_bhk_rigid_body();
-	void load_bhk_collision_object();
-	void load_ni_tri_strips();
+	void * load_bsx_flags();
+	void * load_ni_string_extra_data();
+	void * load_bhk_convex_vertices_shape();
+	void * load_bhk_rigid_body();
+	void * load_bhk_collision_object();
+	void * load_ni_tri_strips();
 };

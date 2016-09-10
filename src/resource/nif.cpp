@@ -11,8 +11,25 @@ bool nif::load(const char *path) {
 	load_header();
 
 	// TODO: figure out a good way of loading all ni_objects in the file
-	blocks = malloc(sizeof(void *) * h->num_blocks);
-	load_root();
+	blocks = (void **)malloc(sizeof(void *) * h->num_blocks);
+
+	// TODO: implement this without using a lot of if/else
+	for (uint32_t i = 0; i < h->num_blocks; i++) {
+
+		int type_index = h->block_type_indexes[i];
+		char *type = h->block_types[type_index];
+
+		if (strcmp(type, "NiNode") == 0) {
+			blocks[i] = load_ni_node();
+		} else if (strcmp(type, "BSXFlags") == 0) {
+			blocks[i] = load_bsx_flags();
+		} else if (strcmp(type, "NiStringExtraData") == 0) {
+			blocks[i] = load_ni_string_extra_data();
+		} else if (strcmp(type, "bhkConvexVerticesShape") == 0) {
+			blocks[i] = load_bhk_convex_vertices_shape();
+		}
+		
+	}
 	
 	free_header();
 	return true;
@@ -85,50 +102,6 @@ void nif::load_block_data() {
 
 }
 
-void nif::load_root() {
-
-	root = (struct ni_node*)malloc(sizeof(struct ni_node));
-
-	fread(&root->name_len, sizeof(uint32_t), 1, fp);
-	root->name = (char *)malloc(root->name_len + 1); //+1 for '\0'
-	root->name[root->name_len] = '\0';
-	fread(root->name, sizeof(uint8_t), root->name_len, fp);
-
-	fread(&root->num_extra_data, sizeof(uint32_t), 1, fp);
-	if (root->num_extra_data > 0) {
-		root->extra_data = (int32_t *)malloc(root->num_extra_data);
-		fread(root->extra_data, sizeof(int32_t), root->num_extra_data, fp);
-	}
-	
-	// TODO: merge this into a single fread call
-	fread(&root->controller, sizeof(int32_t), 1, fp);
-	fread(&root->flags, sizeof(uint16_t), 1, fp);
-	fread(root->translation, sizeof(uint32_t), 3, fp);
-	fread(root->rotation, sizeof(uint32_t), 9, fp);
-	fread(&root->scale, sizeof(uint32_t), 1, fp);
-
-	fread(&root->num_properties, sizeof(uint32_t), 1, fp);
-	if (root->num_properties != 0) {
-		root->properties = (int32_t *)malloc(sizeof(int32_t) * root->num_properties);
-		fread(root->properties, sizeof(int32_t), root->num_properties, fp);
-	}
-
-	fread(&root->collision_object, sizeof(int32_t), 1, fp);
-
-	fread(&root->num_children, sizeof(uint32_t), 1, fp);
-	if (root->num_children != 0) {
-		root->children = (int32_t *)malloc(sizeof(int32_t) * root->num_children);
-		fread(root->children, sizeof(int32_t), root->num_children, fp);
-	}
-
-	fread(&root->num_effects, sizeof(uint32_t), 1, fp);
-	if (root->num_effects != 0) {
-		root->effects = (int32_t *)malloc(sizeof(int32_t) * root->num_effects);
-		fread(root->effects, sizeof(int32_t), root->num_effects, fp);
-	}
-
-}
-
 /*
 	TODO:
 	for now all of this loading code uses multiple fread calls
@@ -139,7 +112,53 @@ void nif::load_root() {
 	once data is coming from the bsa manager
 */
 
-void nif::load_bsx_flags() {
+void * nif::load_ni_node() {
+
+	struct ni_node *node = (struct ni_node*)malloc(sizeof(struct ni_node));
+
+	fread(&node->name_len, sizeof(uint32_t), 1, fp);
+	node->name = (char *)malloc(node->name_len + 1); //+1 for '\0'
+	node->name[node->name_len] = '\0';
+	fread(node->name, sizeof(uint8_t), node->name_len, fp);
+
+	fread(&node->num_extra_data, sizeof(uint32_t), 1, fp);
+	if (node->num_extra_data > 0) {
+		node->extra_data = (int32_t *)malloc(node->num_extra_data);
+		fread(node->extra_data, sizeof(int32_t), node->num_extra_data, fp);
+	}
+
+	// TODO: merge this into a single fread call
+	fread(&node->controller, sizeof(int32_t), 1, fp);
+	fread(&node->flags, sizeof(uint16_t), 1, fp);
+	fread(&node->translation, sizeof(glm::vec3), 1, fp);
+	fread(&node->rotation, sizeof(glm::mat3), 1, fp);
+	fread(&node->scale, sizeof(uint32_t), 1, fp);
+
+	fread(&node->num_properties, sizeof(uint32_t), 1, fp);
+	if (node->num_properties != 0) {
+		node->properties = (int32_t *)malloc(sizeof(int32_t) * node->num_properties);
+		fread(node->properties, sizeof(int32_t), node->num_properties, fp);
+	}
+
+	fread(&node->collision_object, sizeof(int32_t), 1, fp);
+
+	fread(&node->num_children, sizeof(uint32_t), 1, fp);
+	if (node->num_children != 0) {
+		node->children = (int32_t *)malloc(sizeof(int32_t) * node->num_children);
+		fread(node->children, sizeof(int32_t), node->num_children, fp);
+	}
+
+	fread(&node->num_effects, sizeof(uint32_t), 1, fp);
+	if (node->num_effects != 0) {
+		node->effects = (int32_t *)malloc(sizeof(int32_t) * node->num_effects);
+		fread(node->effects, sizeof(int32_t), node->num_effects, fp);
+	}
+
+	return (void *)node;
+
+}
+
+void * nif::load_bsx_flags() {
 
 	struct bsx_flags *node = (struct bsx_flags*)malloc(sizeof(struct bsx_flags));
 	fread(&node->name_len, sizeof(uint32_t), 1, fp);
@@ -148,9 +167,11 @@ void nif::load_bsx_flags() {
 	fread(node->name, sizeof(uint8_t), node->name_len, fp);
 	fread(&node->flags, sizeof(uint32_t), 1, fp);
 
+	return (void *)node;
+
 }
 
-void nif::load_ni_string_extra_data() {
+void * nif::load_ni_string_extra_data() {
 
 	struct ni_string_extra_data *node = (struct ni_string_extra_data*)malloc(sizeof(struct ni_string_extra_data));
 	fread(&node->name_len, sizeof(uint32_t), 1, fp);
@@ -162,37 +183,45 @@ void nif::load_ni_string_extra_data() {
 	node->data[node->data_len] = '\0';
 	fread(node->data, sizeof(uint8_t), node->data_len, fp);
 
+	return (void *)node;
+
 }
 
-void nif::load_bhk_convex_vertices_shape() {
+void * nif::load_bhk_convex_vertices_shape() {
 
 	struct bhk_convex_vertices_shape *node = (struct bhk_convex_vertices_shape*)malloc(sizeof(struct bhk_convex_vertices_shape));
 	fread(&node->material, sizeof(uint32_t), 1, fp);
 	fread(&node->radius, sizeof(float), 1, fp);
 	fread(node->unknown, sizeof(float), BCVS_UNKNOWN_FLOAT_SIZE, fp);
 	fread(&node->num_vertices, sizeof(uint32_t), 1, fp);
-	node->vertices = (float *)malloc(node->num_vertices * sizeof(float));
-	fread(node->vertices, sizeof(float), node->num_vertices, fp);
+	node->vertices = (glm::vec4 *)malloc(node->num_vertices * sizeof(glm::vec4));
+	fread(node->vertices, sizeof(glm::vec4), node->num_vertices, fp);
 	fread(&node->num_normals, sizeof(uint32_t), 1, fp);
-	node->normals = (float *)malloc(node->num_normals * sizeof(float));
-	fread(node->normals, sizeof(float), node->num_normals, fp);
+	node->normals = (glm::vec4 *)malloc(node->num_normals * sizeof(glm::vec4));
+	fread(node->normals, sizeof(glm::vec4), node->num_normals, fp);
+
+	return (void *)node;
 
 }
 
-void nif::load_bhk_rigid_body() {
+void * nif::load_bhk_rigid_body() {
 	// TODO
+
+	return (void *)0;
 }
 
-void nif::load_bhk_collision_object() {
+void * nif::load_bhk_collision_object() {
 
 	struct bhk_collision_object *node = (struct bhk_collision_object*)malloc(sizeof(struct bhk_collision_object));
 	fread(&node->target, sizeof(uint32_t), 1, fp);
 	fread(&node->unknown_short, sizeof(uint16_t), 1, fp);
 	fread(&node->body, sizeof(uint32_t), 1, fp);
 
+	return (void *)node;
+
 }
 
-void nif::load_ni_tri_strips() {
+void * nif::load_ni_tri_strips() {
 
 	struct ni_tri_strips *node = (struct ni_tri_strips*)malloc(sizeof(struct ni_tri_strips));
 	fread(&node->name_len, sizeof(uint32_t), 1, fp);
@@ -208,8 +237,8 @@ void nif::load_ni_tri_strips() {
 	}
 	fread(&node->controller, sizeof(uint32_t), 1, fp);
 	fread(&node->flags, sizeof(uint32_t), 1, fp);
-	fread(node->translation, sizeof(float), NI_VEC_THREE_SIZE, fp);
-	fread(node->rotation, sizeof(float), NI_3_3_MAT_SIZE, fp);
+	fread(&node->translation, sizeof(glm::vec3), 1, fp);
+	fread(&node->rotation, sizeof(glm::mat3), 1, fp);
 	fread(&node->scale, sizeof(float), 1, fp);
 	fread(&node->num_properties, sizeof(uint32_t), 1, fp);
 	if (node->num_properties > 0) {
@@ -222,5 +251,7 @@ void nif::load_ni_tri_strips() {
 	fread(&node->data, sizeof(uint32_t), 1, fp);
 	fread(&node->skin_instance, sizeof(uint32_t), 1, fp);
 	fread(&node->has_shader, sizeof(uint8_t), 1, fp);
+
+	return (void *)node;
 
 }
