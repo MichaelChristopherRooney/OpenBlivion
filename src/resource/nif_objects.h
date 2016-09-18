@@ -21,7 +21,7 @@ struct ni_binary_extra_data {
 	uint32_t name_len; // TODO: is this always 3?
 	char *name;
 	uint32_t data_len;
-	uint8_t data;
+	uint8_t *data;
 };
 
 #define BCVS_UNKNOWN_FLOAT_SIZE 6
@@ -36,12 +36,50 @@ struct bhk_convex_vertices_shape {
 };
 
 struct bhk_rigid_body {
-	// TODO
+	uint32_t shape;
+	uint8_t layer;
+	uint8_t flags_part_number;
+	uint16_t unknown_short;
+	int32_t unknown_int_1;
+	int32_t unknown_int_2;
+	int32_t unknown_3_ints[3];
+	uint8_t collision_response;
+	uint8_t unknown_byte;
+	uint16_t process_contact_callback;
+	uint16_t unknown_2_shorts[2];
+	uint8_t layer_copy;
+	uint8_t flags_part_number_copy;
+	uint16_t unknown_short_copy;
+	uint16_t unknown_6_shorts[6];
+	glm::vec4 translation;
+	glm::vec4 rotation;
+	glm::vec4 linear_velocity;
+	glm::vec4 angular_velocity;
+	glm::mat3x4 inertia;
+	glm::vec4 center;
+	float mass;
+	float linear_damping;
+	float angular_damping;
+	float friction;
+	float restitution;
+	float max_linear_velocity;
+	float max_angular_velocity;
+	float penetration_depth;
+	uint8_t motion_system;
+	uint8_t deactivator_type;
+	uint8_t solver_deactivation;
+	uint8_t motion_quality;
+	uint32_t unknown_int_6;
+	uint32_t unknown_int_7;
+	uint32_t unknown_int_8;
+	uint32_t num_constraints;
+	uint32_t *constraints;
+	uint32_t unknown_int_9;
 };
 
 struct bhk_collision_object {
 	uint32_t target;
-	uint16_t unknown_short;
+	uint16_t flags;
 	uint32_t body;
 };
 
@@ -51,7 +89,7 @@ struct ni_tri_strips {
 	uint32_t num_extra_data;
 	uint32_t *extra_data;
 	uint32_t controller;
-	uint32_t flags;
+	uint16_t flags;
 	glm::vec3 translation;
 	glm::mat3 rotation;
 	float scale;
@@ -83,6 +121,7 @@ struct ni_texturing_property {
 	char *name;
 	uint32_t num_extra_data;
 	uint32_t *extra_data_list;
+	uint32_t controller;
 	uint32_t apply_mode;
 	uint32_t texture_count;
 	uint8_t has_base_texture;
