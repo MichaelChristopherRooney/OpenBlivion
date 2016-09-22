@@ -39,6 +39,8 @@ bool nif::load(const char *path) {
 			blocks[i] = load_ni_material_property();
 		} else if (strcmp(type, "NiTexturingProperty") == 0) {
 			blocks[i] = load_ni_texturing_property();
+		} else if (strcmp(type, "NiSourceTexture") == 0) {
+			blocks[i] = load_ni_source_texture();
 		}
 		
 	}
@@ -337,12 +339,85 @@ void * nif::load_ni_texturing_property() {
 	fread(&node->texture_count, sizeof(uint32_t), 1, fp);
 	fread(&node->has_base_texture, sizeof(uint8_t), 1, fp);
 	if (node->has_base_texture) {
-		fread(&node->source, sizeof(uint32_t), 1, fp);
-		fread(&node->clamp_mode, sizeof(uint32_t), 1, fp);
-		fread(&node->filter_mode, sizeof(uint32_t), 1, fp);
+		node->base_texture = load_texture_description();
 	}
-	// TODO:
+	fread(&node->has_dark_texture, sizeof(uint8_t), 1, fp);
+	if (node->has_dark_texture) {
+		node->dark_texture = load_texture_description();
+	}
+	fread(&node->has_detail_texture, sizeof(uint8_t), 1, fp);
+	if (node->has_detail_texture) {
+		node->detail_texture = load_texture_description();
+	}
+	fread(&node->has_gloss_texture, sizeof(uint8_t), 1, fp);
+	if (node->has_gloss_texture) {
+		node->gloss_texture = load_texture_description();
+	}
+	fread(&node->has_glow_texture, sizeof(uint8_t), 1, fp);
+	if (node->has_glow_texture) {
+		node->glow_texture = load_texture_description();
+	}
+	fread(&node->has_bump_map_texture, sizeof(uint8_t), 1, fp);
+	if (node->has_bump_map_texture) {
+		node->bump_map_texture = load_texture_description();
+	}
+	fread(&node->has_decal_0_texture, sizeof(uint8_t), 1, fp);
+	if (node->has_decal_0_texture) {
+		node->decal_0_texture = load_texture_description();
+	}
+	fread(&node->num_shader_textures, sizeof(uint32_t), 1, fp);
+	if (node->num_shader_textures > 0) {
+		// TODO:
+	}
 
 	return (void *)node;
+
+}
+
+void * nif::load_ni_source_texture() {
+
+	struct ni_source_texture *node = (struct ni_source_texture*)malloc(sizeof(struct ni_source_texture));
+	fread(&node->name_len, sizeof(uint32_t), 1, fp);
+	node->name = (char *)malloc(node->name_len + 1); //+1 for '\0'
+	node->name[node->name_len] = '\0';
+	fread(node->name, sizeof(uint8_t), node->name_len, fp);
+	fread(&node->num_extra_data, sizeof(uint32_t), 1, fp);
+	if (node->num_extra_data > 0) {
+		node->extra_data_list = (uint32_t *)malloc(node->num_extra_data * sizeof(uint32_t));
+		fread(node->extra_data_list, sizeof(uint32_t), node->num_extra_data, fp);
+	} else {
+		node->extra_data_list = NULL;
+	}
+	fread(&node->controller, sizeof(uint32_t), 1, fp);
+	fread(&node->use_external, sizeof(uint8_t), 1, fp);
+	fread(&node->file_name_len, sizeof(uint32_t), 1, fp);
+	node->file_name = (char *)malloc(node->file_name_len + 1); //+1 for '\0'
+	node->file_name[node->file_name_len] = '\0';
+	fread(node->file_name, sizeof(uint8_t), node->file_name_len, fp);
+	fread(&node->unknown_link, sizeof(uint32_t), 1, fp);
+	fread(&node->pixel_layout, sizeof(uint32_t), 1, fp);
+	fread(&node->use_mipmaps, sizeof(uint32_t), 1, fp);
+	fread(&node->alpha_format, sizeof(uint32_t), 1, fp);
+	fread(&node->is_static, sizeof(uint8_t), 1, fp);
+	fread(&node->direct_render, sizeof(uint8_t), 1, fp);
+
+	return (void *)node;
+
+}
+
+struct texture_description * nif::load_texture_description() {
+
+	struct texture_description *cur = (struct texture_description*)malloc(sizeof(struct texture_description));
+	fread(&cur->source, sizeof(uint32_t), 1, fp);
+	fread(&cur->clamp_mode, sizeof(uint32_t), 1, fp);
+	fread(&cur->filter_mode, sizeof(uint32_t), 1, fp);
+	fread(&cur->uv_set, sizeof(uint32_t), 1, fp);
+	fread(&cur->has_texture_transform, sizeof(uint8_t), 1, fp);
+	if (cur->has_texture_transform) {
+		fread(&cur->translation, sizeof(glm::vec2), 1, fp);
+		fread(&cur->tiling, sizeof(glm::vec2), 1, fp);
+	}
+
+	return cur;
 
 }

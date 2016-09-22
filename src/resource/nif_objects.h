@@ -4,6 +4,21 @@
 
 #include <include\glm\glm.hpp>
 
+struct texture_description {
+	// TODO: confirm that all types are here
+	uint32_t source;
+	uint32_t clamp_mode;
+	uint32_t filter_mode;
+	uint32_t uv_set;
+	uint8_t has_texture_transform;
+	glm::vec2 translation; 
+	glm::vec2 tiling;
+};
+
+struct shader_texture_description {
+	// TODO:
+};
+
 struct bsx_flags {
 	uint32_t name_len; // TODO: is this always 3?
 	char * name;
@@ -115,7 +130,6 @@ struct ni_material_property {
 	float alpha;
 };
 
-// TODO: confirm bool sizes
 struct ni_texturing_property {
 	uint32_t name_len;
 	char *name;
@@ -125,23 +139,21 @@ struct ni_texturing_property {
 	uint32_t apply_mode;
 	uint32_t texture_count;
 	uint8_t has_base_texture;
-	uint32_t source;
-	uint32_t clamp_mode;
-	uint32_t filter_mode;
-	uint32_t uv_set;
-	uint8_t has_texture_transform;
+	struct texture_description *base_texture;
 	uint8_t has_dark_texture;
-	uint32_t dark_texture;
-	uint8_t has_detail_texutre;
-	uint32_t detail_texture;
+	struct texture_description *dark_texture;
+	uint8_t has_detail_texture;
+	struct texture_description *detail_texture;
 	uint8_t has_gloss_texture;
-	uint32_t gloss_texture;
+	struct texture_description *gloss_texture;
 	uint8_t has_glow_texture;
-	uint32_t glow_texture;
+	struct texture_description *glow_texture;
 	uint8_t has_bump_map_texture;
-	uint32_t bump_map_texture;
+	struct texture_description *bump_map_texture;
 	uint8_t has_decal_0_texture;
-	uint32_t decal_0_texture;
+	struct texture_description *decal_0_texture;
+	uint32_t num_shader_textures;
+	struct shader_texture_description shader_textures;
 };
 
 struct ni_source_texture {

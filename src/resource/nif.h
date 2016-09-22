@@ -53,4 +53,6 @@ private:
 	void * load_ni_tri_strips();
 	void * load_ni_material_property();
 	void * load_ni_texturing_property();
+	void * load_ni_source_texture();
+	struct texture_description * load_texture_description();
 };
