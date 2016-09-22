@@ -41,6 +41,8 @@ bool nif::load(const char *path) {
 			blocks[i] = load_ni_texturing_property();
 		} else if (strcmp(type, "NiSourceTexture") == 0) {
 			blocks[i] = load_ni_source_texture();
+		} else if (strcmp(type, "NiTriStripsData") == 0) {
+			blocks[i] = load_ni_tri_strips_data();
 		}
 		
 	}
@@ -400,6 +402,37 @@ void * nif::load_ni_source_texture() {
 	fread(&node->alpha_format, sizeof(uint32_t), 1, fp);
 	fread(&node->is_static, sizeof(uint8_t), 1, fp);
 	fread(&node->direct_render, sizeof(uint8_t), 1, fp);
+
+	return (void *)node;
+
+}
+
+void * nif::load_ni_tri_strips_data() {
+
+	struct ni_tri_strips_data *node = (struct ni_tri_strips_data*)malloc(sizeof(struct ni_tri_strips_data));
+	fread(&node->unknown_int, sizeof(int32_t), 1, fp);
+	fread(&node->num_vertices, sizeof(uint16_t), 1, fp);
+	fread(&node->keep_flags, sizeof(uint8_t), 1, fp);
+	fread(&node->compress_flags, sizeof(uint8_t), 1, fp);
+	fread(&node->has_vertices, sizeof(uint8_t), 1, fp);
+	if (node->has_vertices) {
+		node->vertices = (glm::vec3 *)malloc(node->num_vertices * sizeof(glm::vec3));
+		fread(node->vertices, sizeof(glm::vec3), node->num_vertices, fp);
+	}
+	fread(&node->vector_flags, sizeof(uint16_t), 1, fp);
+	fread(&node->has_normals, sizeof(uint8_t), 1, fp);
+	if (node->has_normals) {
+		node->normals = (glm::vec3 *)malloc(node->num_vertices * sizeof(glm::vec3));
+		fread(node->normals, sizeof(glm::vec3), node->num_vertices, fp);
+	}
+	fread(&node->center, sizeof(glm::vec3), 1, fp);
+	fread(&node->radius, sizeof(float), 1, fp);
+	fread(&node->has_vertex_colours, sizeof(uint8_t), 1, fp);
+	if (node->has_vertex_colours) { // TODO: check if the sizes here are correct
+		node->vertex_colours = (glm::vec4 *)malloc(node->num_vertices * sizeof(glm::vec4));
+		fread(node->vertex_colours, sizeof(glm::vec4), node->num_vertices, fp);
+	}
+	// TODO: uv sets
 
 	return (void *)node;
 

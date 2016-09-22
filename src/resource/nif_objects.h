@@ -174,12 +174,13 @@ struct ni_source_texture {
 };
 
 struct ni_tri_strips_data {
-	uint32_t unknown_int;
+	int32_t unknown_int;
 	uint16_t num_vertices;
 	uint8_t keep_flags;
 	uint8_t compress_flags;
 	uint8_t has_vertices;
 	glm::vec3 *vertices;
+	uint16_t vector_flags;
 	uint8_t has_normals;
 	glm::vec3 *normals;
 	glm::vec3 center;
