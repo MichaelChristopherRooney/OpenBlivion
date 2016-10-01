@@ -35,9 +35,11 @@ struct nif_header {
 class nif {
 public:
 	FILE *fp;
-	bool load(const char *path);
+	bool load(uint8_t *data);
 private:
 	nif_header *h;
+	uint8_t *base_data;
+	uint32_t data_offset = 0;
 	void **blocks;
 	void load_header();
 	void load_export_info();
@@ -55,5 +57,6 @@ private:
 	void * load_ni_texturing_property();
 	void * load_ni_source_texture();
 	void * load_ni_tri_strips_data();
+	void copy_data(void * dest, uint32_t type_size, uint32_t count);
 	struct texture_description * load_texture_description();
 };

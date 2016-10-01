@@ -9,7 +9,7 @@ GLuint texture_manager::load_dds(const std::string file_path) {
 		return textures[file_path]; 
 	}
 
-	uint8_t * data = bsa_manager::load_asset(file_path);
+	uint8_t *data = bsa_manager::load_asset(file_path);
 
 	unsigned int height = *(unsigned int*)&(data[12]);
 	unsigned int width = *(unsigned int*)&(data[16]);

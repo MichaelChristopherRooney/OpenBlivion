@@ -7,7 +7,7 @@ bool bsa_manager::init() {
 
 	// TODO: eventually there will be code here to find and load all .bsa files under the current directory
 	// for now just load the .bsa with texture data for testing
-	if (!load_archive("C:\\Program Files (x86)\\Bethesda Softworks\\Oblivion\\Data\\Oblivion - Textures - Compressed.bsa")) {
+	if (!load_archive("C:\\Program Files (x86)\\Bethesda Softworks\\Oblivion\\Data\\Oblivion - Meshes.bsa")) {
 		return false;
 	}
 

@@ -1,12 +1,8 @@
 #include <src\resource\nif.h>
 
-bool nif::load(const char *path) {
+bool nif::load(uint8_t *data) {
 
-	fp = fopen(path, "rb");
-	if (!fp) {
-		printf("Error opening nif file\n");
-		return false;
-	}
+	base_data = data;
 
 	load_header();
 
@@ -54,13 +50,13 @@ bool nif::load(const char *path) {
 void nif::load_header() {
 
 	h = (struct nif_header*)malloc(sizeof(struct nif_header));
-	fread(h, 1, NIF_HEADER_EXPORT_INFO_START, fp);
+	copy_data(h, NIF_HEADER_EXPORT_INFO_START, 1);
 	h->header_str[NIF_HEADER_STRING_LENGTH - 1] = '\0'; // replace '\n' with '\0'
 
 	load_export_info();
 	load_block_data();
 
-	fread(&h->unknown_2, sizeof(uint32_t), 1, fp);
+	copy_data(&h->unknown_2, sizeof(uint32_t), 1);
 
 }
 
@@ -83,17 +79,17 @@ void nif::free_header() {
 // so we must process data from the file
 void nif::load_export_info() {
 
-	fread(&h->creator_len, sizeof(uint8_t), 1, fp);
+	copy_data(&h->creator_len, sizeof(uint8_t), 1);
 	h->creator = (char *)malloc(h->creator_len);
-	fread(h->creator, sizeof(uint8_t), h->creator_len, fp);
+	copy_data(h->creator, h->creator_len * sizeof(char), 1);
 
-	fread(&h->export_info_1_len, sizeof(uint8_t), 1, fp);
+	copy_data(&h->export_info_1_len, sizeof(uint8_t), 1);
 	h->export_info_1 = (char *)malloc(h->export_info_1_len);
-	fread(h->export_info_1, sizeof(uint8_t), h->export_info_1_len, fp);
+	copy_data(h->export_info_1, h->export_info_1_len * sizeof(char), 1);
 
-	fread(&h->export_info_2_len, sizeof(uint8_t), 1, fp);
+	copy_data(&h->export_info_2_len, sizeof(uint8_t), 1);
 	h->export_info_2 = (char *)malloc(h->export_info_2_len);
-	fread(h->export_info_2, sizeof(uint8_t), h->export_info_2_len, fp);
+	copy_data(h->export_info_2, h->export_info_2_len * sizeof(char), 1);
 
 }
 
@@ -103,70 +99,61 @@ void nif::load_export_info() {
 // the block type indexes are also stored sequentially
 void nif::load_block_data() {
 
-	fread(&h->num_block_types, sizeof(uint16_t), 1, fp);
+	copy_data(&h->num_block_types, sizeof(uint16_t), 1);
 	h->block_types = (char **)malloc(h->num_block_types * sizeof(uint16_t *));
 	for (uint16_t i = 0; i < h->num_block_types; i++) {
 		uint32_t str_size = 0;
-		fread(&str_size, sizeof(uint32_t), 1, fp);
+		copy_data(&str_size, sizeof(uint32_t), 1);
 		h->block_types[i] = (char *)malloc(str_size + 1); // +1 for '\0'
-		fread(h->block_types[i], sizeof(uint8_t), str_size, fp);
+		copy_data(h->block_types[i], sizeof(uint8_t), str_size);
 		h->block_types[i][str_size] = '\0';
 	}
 	h->block_type_indexes = (uint16_t *)malloc(h->num_blocks * sizeof(uint16_t));
-	fread(h->block_type_indexes, sizeof(uint16_t), h->num_blocks, fp);
+	copy_data(h->block_type_indexes,  sizeof(uint16_t), h->num_blocks);
 
 }
 
 /*
 	TODO:
-	for now all of this loading code uses multiple fread calls
+	for now all of this loading code uses multiple copy_data calls
 	these will need to be consolidated into as few calls as possible
 	once the correctness of the data structures has been verified 
 	(in particular once sizes have been confirmed)
-	then they will need to be converted to memcpy calls 
-	once data is coming from the bsa manager
 */
 
 void * nif::load_ni_node() {
 
 	struct ni_node *node = (struct ni_node*)malloc(sizeof(struct ni_node));
 
-	fread(&node->name_len, sizeof(uint32_t), 1, fp);
+	copy_data(&node->name_len, sizeof(uint32_t), 1);
 	node->name = (char *)malloc(node->name_len + 1); //+1 for '\0'
 	node->name[node->name_len] = '\0';
-	fread(node->name, sizeof(uint8_t), node->name_len, fp);
-
-	fread(&node->num_extra_data, sizeof(uint32_t), 1, fp);
+	copy_data(node->name, sizeof(uint8_t), node->name_len);
+	copy_data(&node->num_extra_data, sizeof(uint32_t), 1);
 	if (node->num_extra_data > 0) {
 		node->extra_data = (int32_t *)malloc(node->num_extra_data);
-		fread(node->extra_data, sizeof(int32_t), node->num_extra_data, fp);
+		copy_data(node->extra_data, sizeof(int32_t), node->num_extra_data);
 	}
-
-	// TODO: merge this into a single fread call
-	fread(&node->controller, sizeof(int32_t), 1, fp);
-	fread(&node->flags, sizeof(uint16_t), 1, fp);
-	fread(&node->translation, sizeof(glm::vec3), 1, fp);
-	fread(&node->rotation, sizeof(glm::mat3), 1, fp);
-	fread(&node->scale, sizeof(uint32_t), 1, fp);
-
-	fread(&node->num_properties, sizeof(uint32_t), 1, fp);
+	copy_data(&node->controller, sizeof(int32_t), 1);
+	copy_data(&node->flags, sizeof(uint16_t), 1);
+	copy_data(&node->translation, sizeof(glm::vec3), 1);
+	copy_data(&node->rotation, sizeof(glm::mat3), 1);
+	copy_data(&node->scale, sizeof(uint32_t), 1);
+	copy_data(&node->num_properties, sizeof(uint32_t), 1);
 	if (node->num_properties != 0) {
 		node->properties = (int32_t *)malloc(sizeof(int32_t) * node->num_properties);
-		fread(node->properties, sizeof(int32_t), node->num_properties, fp);
+		copy_data(node->properties, sizeof(int32_t), node->num_properties);
 	}
-
-	fread(&node->collision_object, sizeof(int32_t), 1, fp);
-
-	fread(&node->num_children, sizeof(uint32_t), 1, fp);
+	copy_data(&node->collision_object, sizeof(int32_t), 1);
+	copy_data(&node->num_children, sizeof(uint32_t), 1);
 	if (node->num_children != 0) {
 		node->children = (int32_t *)malloc(sizeof(int32_t) * node->num_children);
-		fread(node->children, sizeof(int32_t), node->num_children, fp);
+		copy_data(node->children, sizeof(int32_t), node->num_children);
 	}
-
-	fread(&node->num_effects, sizeof(uint32_t), 1, fp);
+	copy_data(&node->num_effects, sizeof(uint32_t), 1);
 	if (node->num_effects != 0) {
 		node->effects = (int32_t *)malloc(sizeof(int32_t) * node->num_effects);
-		fread(node->effects, sizeof(int32_t), node->num_effects, fp);
+		copy_data(node->effects, sizeof(int32_t), node->num_effects);
 	}
 
 	return (void *)node;
@@ -176,11 +163,11 @@ void * nif::load_ni_node() {
 void * nif::load_bsx_flags() {
 
 	struct bsx_flags *node = (struct bsx_flags*)malloc(sizeof(struct bsx_flags));
-	fread(&node->name_len, sizeof(uint32_t), 1, fp);
+	copy_data(&node->name_len, sizeof(uint32_t), 1);
 	node->name = (char *)malloc(node->name_len + 1); //+1 for '\0'
 	node->name[node->name_len] = '\0';
-	fread(node->name, sizeof(uint8_t), node->name_len, fp);
-	fread(&node->flags, sizeof(uint32_t), 1, fp);
+	copy_data(node->name, sizeof(uint8_t), node->name_len);
+	copy_data(&node->flags, sizeof(uint32_t), 1);
 
 	return (void *)node;
 
@@ -189,14 +176,14 @@ void * nif::load_bsx_flags() {
 void * nif::load_ni_string_extra_data() {
 
 	struct ni_string_extra_data *node = (struct ni_string_extra_data*)malloc(sizeof(struct ni_string_extra_data));
-	fread(&node->name_len, sizeof(uint32_t), 1, fp);
+	copy_data(&node->name_len, sizeof(uint32_t), 1);
 	node->name = (char *)malloc(node->name_len + 1); //+1 for '\0'
 	node->name[node->name_len] = '\0';
-	fread(node->name, sizeof(uint8_t), node->name_len, fp);
-	fread(&node->data_len, sizeof(uint32_t), 1, fp);
+	copy_data(node->name, sizeof(uint8_t), node->name_len);
+	copy_data(&node->data_len, sizeof(uint32_t), 1);
 	node->data = (char *)malloc(node->data_len + 1); //+1 for '\0'
 	node->data[node->data_len] = '\0';
-	fread(node->data, sizeof(uint8_t), node->data_len, fp);
+	copy_data(node->data, sizeof(uint8_t), node->data_len);
 
 	return (void *)node;
 
@@ -205,13 +192,13 @@ void * nif::load_ni_string_extra_data() {
 void * nif::load_ni_binary_extra_data() {
 
 	struct ni_binary_extra_data *node = (struct ni_binary_extra_data*)malloc(sizeof(struct ni_binary_extra_data));
-	fread(&node->name_len, sizeof(uint32_t), 1, fp);
+	copy_data(&node->name_len, sizeof(uint32_t), 1);
 	node->name = (char *)malloc(node->name_len + 1); //+1 for '\0'
 	node->name[node->name_len] = '\0';
-	fread(node->name, sizeof(uint8_t), node->name_len, fp);
-	fread(&node->data_len, sizeof(uint32_t), 1, fp);
+	copy_data(node->name, sizeof(uint8_t), node->name_len);
+	copy_data(&node->data_len, sizeof(uint32_t), 1);
 	node->data = (uint8_t *)malloc(node->data_len);
-	fread(node->data, sizeof(uint8_t), node->data_len, fp);
+	copy_data(node->data, sizeof(uint8_t), node->data_len);
 
 	return (void *)node;
 
@@ -220,15 +207,15 @@ void * nif::load_ni_binary_extra_data() {
 void * nif::load_bhk_convex_vertices_shape() {
 
 	struct bhk_convex_vertices_shape *node = (struct bhk_convex_vertices_shape*)malloc(sizeof(struct bhk_convex_vertices_shape));
-	fread(&node->material, sizeof(uint32_t), 1, fp);
-	fread(&node->radius, sizeof(float), 1, fp);
-	fread(node->unknown, sizeof(float), BCVS_UNKNOWN_FLOAT_SIZE, fp);
-	fread(&node->num_vertices, sizeof(uint32_t), 1, fp);
+	copy_data(&node->material, sizeof(uint32_t), 1);
+	copy_data(&node->radius, sizeof(float), 1);
+	copy_data(node->unknown, sizeof(float), BCVS_UNKNOWN_FLOAT_SIZE);
+	copy_data(&node->num_vertices, sizeof(uint32_t), 1);
 	node->vertices = (glm::vec4 *)malloc(node->num_vertices * sizeof(glm::vec4));
-	fread(node->vertices, sizeof(glm::vec4), node->num_vertices, fp);
-	fread(&node->num_normals, sizeof(uint32_t), 1, fp);
+	copy_data(node->vertices, sizeof(glm::vec4), node->num_vertices);
+	copy_data(&node->num_normals, sizeof(uint32_t), 1);
 	node->normals = (glm::vec4 *)malloc(node->num_normals * sizeof(glm::vec4));
-	fread(node->normals, sizeof(glm::vec4), node->num_normals, fp);
+	copy_data(node->normals, sizeof(glm::vec4), node->num_normals);
 
 	return (void *)node;
 
@@ -237,14 +224,14 @@ void * nif::load_bhk_convex_vertices_shape() {
 void * nif::load_bhk_rigid_body() {
 	
 	struct bhk_rigid_body *node = (struct bhk_rigid_body*)malloc(sizeof(struct bhk_rigid_body));
-	fread(node, sizeof(struct bhk_rigid_body) - 8, 1, fp); // -8 so we read num constraints then stop
+	copy_data(node, sizeof(struct bhk_rigid_body) - 8, 1); // -8 so we read num constraints then stop
 	if (node->num_constraints > 0) {
 		node->constraints = (uint32_t *)malloc(node->num_constraints * sizeof(uint32_t));
-		fread(node->constraints, sizeof(uint32_t), node->num_constraints, fp);
+		copy_data(node->constraints, sizeof(uint32_t), node->num_constraints);
 	} else {
 		node->constraints = NULL;
 	}
-	fread(&node->unknown_int_9, sizeof(uint32_t), 1, fp);
+	copy_data(&node->unknown_int_9, sizeof(uint32_t), 1);
 
 	return (void *) node;
 
@@ -253,9 +240,9 @@ void * nif::load_bhk_rigid_body() {
 void * nif::load_bhk_collision_object() {
 
 	struct bhk_collision_object *node = (struct bhk_collision_object*)malloc(sizeof(struct bhk_collision_object));
-	fread(&node->target, sizeof(uint32_t), 1, fp);
-	fread(&node->flags, sizeof(uint16_t), 1, fp);
-	fread(&node->body, sizeof(uint32_t), 1, fp);
+	copy_data(&node->target, sizeof(uint32_t), 1);
+	copy_data(&node->flags, sizeof(uint16_t), 1);
+	copy_data(&node->body, sizeof(uint32_t), 1);
 
 	return (void *)node;
 
@@ -264,33 +251,33 @@ void * nif::load_bhk_collision_object() {
 void * nif::load_ni_tri_strips() {
 
 	struct ni_tri_strips *node = (struct ni_tri_strips*)malloc(sizeof(struct ni_tri_strips));
-	fread(&node->name_len, sizeof(uint32_t), 1, fp);
+	copy_data(&node->name_len, sizeof(uint32_t), 1);
 	node->name = (char *)malloc(node->name_len + 1); //+1 for '\0'
 	node->name[node->name_len] = '\0';
-	fread(node->name, sizeof(uint8_t), node->name_len, fp);
-	fread(&node->num_extra_data, sizeof(uint32_t), 1, fp);
+	copy_data(node->name, sizeof(uint8_t), node->name_len);
+	copy_data(&node->num_extra_data, sizeof(uint32_t), 1);
 	if (node->num_extra_data > 0) {
 		node->extra_data = (uint32_t *)malloc(node->num_extra_data * sizeof(uint32_t));
-		fread(node->extra_data, sizeof(uint32_t), node->num_extra_data, fp);
+		copy_data(node->extra_data, sizeof(uint32_t), node->num_extra_data);
 	} else {
 		node->extra_data = NULL;
 	}
-	fread(&node->controller, sizeof(uint32_t), 1, fp);
-	fread(&node->flags, sizeof(uint16_t), 1, fp);
-	fread(&node->translation, sizeof(glm::vec3), 1, fp);
-	fread(&node->rotation, sizeof(glm::mat3), 1, fp);
-	fread(&node->scale, sizeof(float), 1, fp);
-	fread(&node->num_properties, sizeof(uint32_t), 1, fp);
+	copy_data(&node->controller, sizeof(uint32_t), 1);
+	copy_data(&node->flags, sizeof(uint16_t), 1);
+	copy_data(&node->translation, sizeof(glm::vec3), 1);
+	copy_data(&node->rotation, sizeof(glm::mat3), 1);
+	copy_data(&node->scale, sizeof(float), 1);
+	copy_data(&node->num_properties, sizeof(uint32_t), 1);
 	if (node->num_properties > 0) {
 		node->properties = (uint32_t *)malloc(node->num_properties * sizeof(uint32_t));
-		fread(node->properties, sizeof(uint32_t), node->num_properties, fp);
+		copy_data(node->properties, sizeof(uint32_t), node->num_properties);
 	} else {
 		node->properties = NULL;
 	}
-	fread(&node->collision_object, sizeof(uint32_t), 1, fp);
-	fread(&node->data, sizeof(uint32_t), 1, fp);
-	fread(&node->skin_instance, sizeof(uint32_t), 1, fp);
-	fread(&node->has_shader, sizeof(uint8_t), 1, fp);
+	copy_data(&node->collision_object, sizeof(uint32_t), 1);
+	copy_data(&node->data, sizeof(uint32_t), 1);
+	copy_data(&node->skin_instance, sizeof(uint32_t), 1);
+	copy_data(&node->has_shader, sizeof(uint8_t), 1);
 
 	return (void *)node;
 
@@ -299,24 +286,24 @@ void * nif::load_ni_tri_strips() {
 void * nif::load_ni_material_property() {
 
 	struct ni_material_property *node = (struct ni_material_property*)malloc(sizeof(struct ni_material_property));
-	fread(&node->name_len, sizeof(uint32_t), 1, fp);
+	copy_data(&node->name_len, sizeof(uint32_t), 1);
 	node->name = (char *)malloc(node->name_len + 1); //+1 for '\0'
 	node->name[node->name_len] = '\0';
-	fread(node->name, sizeof(uint8_t), node->name_len, fp);
-	fread(&node->num_extra_data, sizeof(uint32_t), 1, fp);
+	copy_data(node->name, sizeof(uint8_t), node->name_len);
+	copy_data(&node->num_extra_data, sizeof(uint32_t), 1);
 	if (node->num_extra_data > 0) {
 		node->extra_data_list = (uint32_t *)malloc(node->num_extra_data * sizeof(uint32_t));
-		fread(node->extra_data_list, sizeof(uint32_t), node->num_extra_data, fp);
+		copy_data(node->extra_data_list, sizeof(uint32_t), node->num_extra_data);
 	} else {
 		node->extra_data_list = NULL;
 	}
-	fread(&node->controller, sizeof(uint32_t), 1, fp);
-	fread(&node->ambient, sizeof(glm::vec3), 1, fp);
-	fread(&node->diffuse, sizeof(glm::vec3), 1, fp);
-	fread(&node->specular, sizeof(glm::vec3), 1, fp);
-	fread(&node->emissive, sizeof(glm::vec3), 1, fp);
-	fread(&node->glossiness, sizeof(float), 1, fp);
-	fread(&node->alpha, sizeof(float), 1, fp);
+	copy_data(&node->controller, sizeof(uint32_t), 1);
+	copy_data(&node->ambient, sizeof(glm::vec3), 1);
+	copy_data(&node->diffuse, sizeof(glm::vec3), 1);
+	copy_data(&node->specular, sizeof(glm::vec3), 1);
+	copy_data(&node->emissive, sizeof(glm::vec3), 1);
+	copy_data(&node->glossiness, sizeof(float), 1);
+	copy_data(&node->alpha, sizeof(float), 1);
 
 	return (void *)node;
 
@@ -325,49 +312,49 @@ void * nif::load_ni_material_property() {
 void * nif::load_ni_texturing_property() {
 
 	struct ni_texturing_property *node = (struct ni_texturing_property*)malloc(sizeof(struct ni_texturing_property));
-	fread(&node->name_len, sizeof(uint32_t), 1, fp);
+	copy_data(&node->name_len, sizeof(uint32_t), 1);
 	node->name = (char *)malloc(node->name_len + 1); //+1 for '\0'
 	node->name[node->name_len] = '\0';
-	fread(node->name, sizeof(uint8_t), node->name_len, fp);
-	fread(&node->num_extra_data, sizeof(uint32_t), 1, fp);
+	copy_data(node->name, sizeof(uint8_t), node->name_len);
+	copy_data(&node->num_extra_data, sizeof(uint32_t), 1);
 	if (node->num_extra_data > 0) {
 		node->extra_data_list = (uint32_t *)malloc(node->num_extra_data * sizeof(uint32_t));
-		fread(node->extra_data_list, sizeof(uint32_t), node->num_extra_data, fp);
+		copy_data(node->extra_data_list, sizeof(uint32_t), node->num_extra_data);
 	} else {
 		node->extra_data_list = NULL;
 	}
-	fread(&node->controller, sizeof(uint32_t), 1, fp);
-	fread(&node->apply_mode, sizeof(uint32_t), 1, fp);
-	fread(&node->texture_count, sizeof(uint32_t), 1, fp);
-	fread(&node->has_base_texture, sizeof(uint8_t), 1, fp);
+	copy_data(&node->controller, sizeof(uint32_t), 1);
+	copy_data(&node->apply_mode, sizeof(uint32_t), 1);
+	copy_data(&node->texture_count, sizeof(uint32_t), 1);
+	copy_data(&node->has_base_texture, sizeof(uint8_t), 1);
 	if (node->has_base_texture) {
 		node->base_texture = load_texture_description();
 	}
-	fread(&node->has_dark_texture, sizeof(uint8_t), 1, fp);
+	copy_data(&node->has_dark_texture, sizeof(uint8_t), 1);
 	if (node->has_dark_texture) {
 		node->dark_texture = load_texture_description();
 	}
-	fread(&node->has_detail_texture, sizeof(uint8_t), 1, fp);
+	copy_data(&node->has_detail_texture, sizeof(uint8_t), 1);
 	if (node->has_detail_texture) {
 		node->detail_texture = load_texture_description();
 	}
-	fread(&node->has_gloss_texture, sizeof(uint8_t), 1, fp);
+	copy_data(&node->has_gloss_texture, sizeof(uint8_t), 1);
 	if (node->has_gloss_texture) {
 		node->gloss_texture = load_texture_description();
 	}
-	fread(&node->has_glow_texture, sizeof(uint8_t), 1, fp);
+	copy_data(&node->has_glow_texture, sizeof(uint8_t), 1);
 	if (node->has_glow_texture) {
 		node->glow_texture = load_texture_description();
 	}
-	fread(&node->has_bump_map_texture, sizeof(uint8_t), 1, fp);
+	copy_data(&node->has_bump_map_texture, sizeof(uint8_t), 1);
 	if (node->has_bump_map_texture) {
 		node->bump_map_texture = load_texture_description();
 	}
-	fread(&node->has_decal_0_texture, sizeof(uint8_t), 1, fp);
+	copy_data(&node->has_decal_0_texture, sizeof(uint8_t), 1);
 	if (node->has_decal_0_texture) {
 		node->decal_0_texture = load_texture_description();
 	}
-	fread(&node->num_shader_textures, sizeof(uint32_t), 1, fp);
+	copy_data(&node->num_shader_textures, sizeof(uint32_t), 1);
 	if (node->num_shader_textures > 0) {
 		// TODO:
 	}
@@ -379,29 +366,29 @@ void * nif::load_ni_texturing_property() {
 void * nif::load_ni_source_texture() {
 
 	struct ni_source_texture *node = (struct ni_source_texture*)malloc(sizeof(struct ni_source_texture));
-	fread(&node->name_len, sizeof(uint32_t), 1, fp);
+	copy_data(&node->name_len, sizeof(uint32_t), 1);
 	node->name = (char *)malloc(node->name_len + 1); //+1 for '\0'
 	node->name[node->name_len] = '\0';
-	fread(node->name, sizeof(uint8_t), node->name_len, fp);
-	fread(&node->num_extra_data, sizeof(uint32_t), 1, fp);
+	copy_data(node->name, sizeof(uint8_t), node->name_len);
+	copy_data(&node->num_extra_data, sizeof(uint32_t), 1);
 	if (node->num_extra_data > 0) {
 		node->extra_data_list = (uint32_t *)malloc(node->num_extra_data * sizeof(uint32_t));
-		fread(node->extra_data_list, sizeof(uint32_t), node->num_extra_data, fp);
+		copy_data(node->extra_data_list, sizeof(uint32_t), node->num_extra_data);
 	} else {
 		node->extra_data_list = NULL;
 	}
-	fread(&node->controller, sizeof(uint32_t), 1, fp);
-	fread(&node->use_external, sizeof(uint8_t), 1, fp);
-	fread(&node->file_name_len, sizeof(uint32_t), 1, fp);
+	copy_data(&node->controller, sizeof(uint32_t), 1);
+	copy_data(&node->use_external, sizeof(uint8_t), 1);
+	copy_data(&node->file_name_len, sizeof(uint32_t), 1);
 	node->file_name = (char *)malloc(node->file_name_len + 1); //+1 for '\0'
 	node->file_name[node->file_name_len] = '\0';
-	fread(node->file_name, sizeof(uint8_t), node->file_name_len, fp);
-	fread(&node->unknown_link, sizeof(uint32_t), 1, fp);
-	fread(&node->pixel_layout, sizeof(uint32_t), 1, fp);
-	fread(&node->use_mipmaps, sizeof(uint32_t), 1, fp);
-	fread(&node->alpha_format, sizeof(uint32_t), 1, fp);
-	fread(&node->is_static, sizeof(uint8_t), 1, fp);
-	fread(&node->direct_render, sizeof(uint8_t), 1, fp);
+	copy_data(node->file_name, sizeof(uint8_t), node->file_name_len);
+	copy_data(&node->unknown_link, sizeof(uint32_t), 1);
+	copy_data(&node->pixel_layout, sizeof(uint32_t), 1);
+	copy_data(&node->use_mipmaps, sizeof(uint32_t), 1);
+	copy_data(&node->alpha_format, sizeof(uint32_t), 1);
+	copy_data(&node->is_static, sizeof(uint8_t), 1);
+	copy_data(&node->direct_render, sizeof(uint8_t), 1);
 
 	return (void *)node;
 
@@ -410,59 +397,68 @@ void * nif::load_ni_source_texture() {
 void * nif::load_ni_tri_strips_data() {
 
 	struct ni_tri_strips_data *node = (struct ni_tri_strips_data*)malloc(sizeof(struct ni_tri_strips_data));
-	fread(&node->unknown_int, sizeof(int32_t), 1, fp);
-	fread(&node->num_vertices, sizeof(uint16_t), 1, fp);
-	fread(&node->keep_flags, sizeof(uint8_t), 1, fp);
-	fread(&node->compress_flags, sizeof(uint8_t), 1, fp);
-	fread(&node->has_vertices, sizeof(uint8_t), 1, fp);
+	copy_data(&node->unknown_int, sizeof(int32_t), 1);
+	copy_data(&node->num_vertices, sizeof(uint16_t), 1);
+	copy_data(&node->keep_flags, sizeof(uint8_t), 1);
+	copy_data(&node->compress_flags, sizeof(uint8_t), 1);
+	copy_data(&node->has_vertices, sizeof(uint8_t), 1);
 	if (node->has_vertices) {
 		node->vertices = (glm::vec3 *)malloc(node->num_vertices * sizeof(glm::vec3));
-		fread(node->vertices, sizeof(glm::vec3), node->num_vertices, fp);
+		copy_data(node->vertices, sizeof(glm::vec3), node->num_vertices);
 	}
-	fread(&node->vector_flags, sizeof(uint16_t), 1, fp);
-	fread(&node->has_normals, sizeof(uint8_t), 1, fp);
+	copy_data(&node->vector_flags, sizeof(uint16_t), 1);
+	copy_data(&node->has_normals, sizeof(uint8_t), 1);
 	if (node->has_normals) {
 		node->normals = (glm::vec3 *)malloc(node->num_vertices * sizeof(glm::vec3));
-		fread(node->normals, sizeof(glm::vec3), node->num_vertices, fp);
+		copy_data(node->normals, sizeof(glm::vec3), node->num_vertices);
 	}
-	fread(&node->center, sizeof(glm::vec3), 1, fp);
-	fread(&node->radius, sizeof(float), 1, fp);
-	fread(&node->has_vertex_colours, sizeof(uint8_t), 1, fp);
+	copy_data(&node->center, sizeof(glm::vec3), 1);
+	copy_data(&node->radius, sizeof(float), 1);
+	copy_data(&node->has_vertex_colours, sizeof(uint8_t), 1);
 	if (node->has_vertex_colours) { // TODO: check if the sizes here are correct
 		node->vertex_colours = (glm::vec4 *)malloc(node->num_vertices * sizeof(glm::vec4));
-		fread(node->vertex_colours, sizeof(glm::vec4), node->num_vertices, fp);
+		copy_data(node->vertex_colours, sizeof(glm::vec4), node->num_vertices);
 	}
 	node->uv_sets = (glm::vec2 **)malloc(1 * sizeof(glm::vec2 *)); // TODO: for now assuming there is only 1 UV set
 	node->uv_sets[0] = (glm::vec2 *)malloc(node->num_vertices * sizeof(glm::vec2));
-	fread(node->uv_sets[0], sizeof(glm::vec2), node->num_vertices, fp);
-	fread(&node->consistency_flags, sizeof(uint16_t), 1, fp);
-	fread(&node->additional_data, sizeof(uint32_t), 1, fp);
-	fread(&node->num_triangles, sizeof(uint16_t), 1, fp);
-	fread(&node->num_strips, sizeof(uint16_t), 1, fp);
+	copy_data(node->uv_sets[0], sizeof(glm::vec2), node->num_vertices);
+	copy_data(&node->consistency_flags, sizeof(uint16_t), 1);
+	copy_data(&node->additional_data, sizeof(uint32_t), 1);
+	copy_data(&node->num_triangles, sizeof(uint16_t), 1);
+	copy_data(&node->num_strips, sizeof(uint16_t), 1);
 	node->strip_lengths = (uint16_t *)malloc(node->num_strips * sizeof(uint16_t *)); // TODO: for now assuming there is only 1 strip
-	fread(&node->strip_lengths[0], sizeof(uint16_t), 1, fp);
-	fread(&node->has_points, sizeof(uint8_t), 1, fp);
+	copy_data(&node->strip_lengths[0], sizeof(uint16_t), 1);
+	copy_data(&node->has_points, sizeof(uint8_t), 1);
 	if (node->has_points) { // TODO: for now assuming there is only 1 set of points
 		node->points = (uint16_t **)malloc(node->num_strips * sizeof(uint16_t *));
 		node->points[0] = (uint16_t *)malloc(node->strip_lengths[0] * sizeof(uint16_t *));
-		fread(node->points[0], sizeof(uint16_t), node->strip_lengths[0], fp);
+		copy_data(node->points[0], sizeof(uint16_t), node->strip_lengths[0]);
 	}
 	
 	return (void *)node;
 
 }
 
+// a wrapper for memcpy
+// loads from base_data + data_offset
+// then increments data_offset by the correct amount
+void nif::copy_data(void * dest, uint32_t type_size, uint32_t count) {
+	uint32_t size = type_size * count;
+	memcpy(dest, base_data + data_offset, size);
+	data_offset += size;
+}
+
 struct texture_description * nif::load_texture_description() {
 
 	struct texture_description *cur = (struct texture_description*)malloc(sizeof(struct texture_description));
-	fread(&cur->source, sizeof(uint32_t), 1, fp);
-	fread(&cur->clamp_mode, sizeof(uint32_t), 1, fp);
-	fread(&cur->filter_mode, sizeof(uint32_t), 1, fp);
-	fread(&cur->uv_set, sizeof(uint32_t), 1, fp);
-	fread(&cur->has_texture_transform, sizeof(uint8_t), 1, fp);
+	copy_data(&cur->source, sizeof(uint32_t), 1);
+	copy_data(&cur->clamp_mode, sizeof(uint32_t), 1);
+	copy_data(&cur->filter_mode, sizeof(uint32_t), 1);
+	copy_data(&cur->uv_set, sizeof(uint32_t), 1);
+	copy_data(&cur->has_texture_transform, sizeof(uint8_t), 1);
 	if (cur->has_texture_transform) {
-		fread(&cur->translation, sizeof(glm::vec2), 1, fp);
-		fread(&cur->tiling, sizeof(glm::vec2), 1, fp);
+		copy_data(&cur->translation, sizeof(glm::vec2), 1);
+		copy_data(&cur->tiling, sizeof(glm::vec2), 1);
 	}
 
 	return cur;

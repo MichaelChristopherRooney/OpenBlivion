@@ -91,11 +91,13 @@ bool engine::run() {
 	// when cells are being loaded
 	// textures will be loaded as needed
 	// for now hard code this value for testing and development
-	std::string file_path = "textures\\armor\\fur\\shield.dds";
+	uint8_t *data = bsa_manager::load_asset("meshes\\armor\\fur\\shield.nif");
+	nif n;
+	n.load(data);
 
 	while (!glfwWindowShouldClose(window)) {
 
-		texture_id = texture_manager::load_dds(file_path);
+		//texture_id = texture_manager::load_dds(file_path);
 		
 		// Clear the screen
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -106,9 +108,9 @@ bool engine::run() {
 		glm::mat4 MVP = cam->projection * cam->view * Model; // Remember, matrix multiplication is the other way around
 		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture_id);
-		glUniform1i(texture_sampler, 0);
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, texture_id);
+		//glUniform1i(texture_sampler, 0);
 
 		glEnableVertexAttribArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
