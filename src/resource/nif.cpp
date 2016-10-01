@@ -432,8 +432,22 @@ void * nif::load_ni_tri_strips_data() {
 		node->vertex_colours = (glm::vec4 *)malloc(node->num_vertices * sizeof(glm::vec4));
 		fread(node->vertex_colours, sizeof(glm::vec4), node->num_vertices, fp);
 	}
-	// TODO: uv sets
-
+	node->uv_sets = (glm::vec2 **)malloc(1 * sizeof(glm::vec2 *)); // TODO: for now assuming there is only 1 UV set
+	node->uv_sets[0] = (glm::vec2 *)malloc(node->num_vertices * sizeof(glm::vec2));
+	fread(node->uv_sets[0], sizeof(glm::vec2), node->num_vertices, fp);
+	fread(&node->consistency_flags, sizeof(uint16_t), 1, fp);
+	fread(&node->additional_data, sizeof(uint32_t), 1, fp);
+	fread(&node->num_triangles, sizeof(uint16_t), 1, fp);
+	fread(&node->num_strips, sizeof(uint16_t), 1, fp);
+	node->strip_lengths = (uint16_t *)malloc(node->num_strips * sizeof(uint16_t *)); // TODO: for now assuming there is only 1 strip
+	fread(&node->strip_lengths[0], sizeof(uint16_t), 1, fp);
+	fread(&node->has_points, sizeof(uint8_t), 1, fp);
+	if (node->has_points) { // TODO: for now assuming there is only 1 set of points
+		node->points = (uint16_t **)malloc(node->num_strips * sizeof(uint16_t *));
+		node->points[0] = (uint16_t *)malloc(node->strip_lengths[0] * sizeof(uint16_t *));
+		fread(node->points[0], sizeof(uint16_t), node->strip_lengths[0], fp);
+	}
+	
 	return (void *)node;
 
 }

@@ -187,7 +187,14 @@ struct ni_tri_strips_data {
 	float radius;
 	uint8_t has_vertex_colours;
 	glm::vec4 *vertex_colours;
-	// TODO: uv sets
+	glm::vec2 **uv_sets;
+	uint16_t consistency_flags;
+	uint32_t additional_data;
+	uint16_t num_triangles;
+	uint16_t num_strips;
+	uint16_t *strip_lengths;
+	uint8_t has_points;
+	uint16_t **points;
 };
 
 struct ni_node {
