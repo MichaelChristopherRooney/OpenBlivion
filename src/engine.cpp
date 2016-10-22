@@ -87,13 +87,8 @@ bool engine::run() {
 
 	bsa_manager::init();
 
-	// TODO: 
-	// when cells are being loaded
-	// textures will be loaded as needed
-	// for now hard code this value for testing and development
-	uint8_t *data = bsa_manager::load_asset("meshes\\armor\\fur\\shield.nif");
-	nif n;
-	n.load(data);
+	model test_model;
+	test_model.load_from_asset("meshes\\armor\\fur\\shield.nif");
 
 	while (!glfwWindowShouldClose(window)) {
 

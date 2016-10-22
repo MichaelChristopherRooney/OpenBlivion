@@ -2,14 +2,14 @@
 
 std::unordered_map<std::string, GLuint> texture_manager::textures = {};
 
-GLuint texture_manager::load_dds(const std::string file_path) {
+GLuint texture_manager::load_dds(const char * file_path) {
 
 	// check if texture is already loaded in VRAM
 	if (textures.find(file_path) != textures.end()) {
 		return textures[file_path]; 
 	}
 
-	uint8_t *data = bsa_manager::load_asset(file_path);
+	uint8_t *data = bsa_manager::load_asset_data(file_path);
 
 	unsigned int height = *(unsigned int*)&(data[12]);
 	unsigned int width = *(unsigned int*)&(data[16]);
@@ -55,7 +55,7 @@ GLuint texture_manager::load_dds(const std::string file_path) {
 
 }
 
-void texture_manager::unload_dds(const std::string file_path) {
+void texture_manager::unload_dds(const char * file_path) {
 
 	// check if texture is already loaded in VRAM
 	if (textures.find(file_path) == textures.end()) {

@@ -34,7 +34,7 @@ bool bsa_manager::load_all_archives(const char *base_path) {
 				sprintf(dir_path, "%s\%s", base_path, cur_entry.cFileName);
 				printf("Entering directory %s\n", dir_path);
 				load_all_archives(dir_path);
-			} else if (is_bsa(cur_entry.cFileName)) { // don't list backups
+			} else if (is_bsa(cur_entry.cFileName)) { // only load bsa files
 				char file_path[2048];
 				sprintf(file_path, "%s%s", base_path, cur_entry.cFileName);
 				printf("Loading archive %s\n", file_path);
@@ -76,7 +76,7 @@ bool bsa_manager::load_archive(const char *file_path) {
 
 }
 
-uint8_t * bsa_manager::load_asset(const std::string file_path) {
+uint8_t * bsa_manager::load_asset_data(const char * file_path) {
 
 	// TODO: handle error when asset does not exist
 	struct bsa_asset *asset = assets[file_path];
@@ -86,13 +86,13 @@ uint8_t * bsa_manager::load_asset(const std::string file_path) {
 	}
 
 	asset->data = (uint8_t *)malloc(asset->original_size);
-	fseek(asset->fp, asset->offset, SEEK_SET);
+	fseek(asset->archive->fp, asset->offset, SEEK_SET);
 
 	if (asset->compressed_size == -1) {
-		fread(asset->data, asset->original_size, 1, asset->fp);
+		fread(asset->data, asset->original_size, 1, asset->archive->fp);
 	} else {
 		uint8_t *compressed_buffer = (uint8_t *)malloc(asset->compressed_size);
-		fread(compressed_buffer, asset->compressed_size, 1, asset->fp);
+		fread(compressed_buffer, asset->compressed_size, 1, asset->archive->fp);
 		z_stream infstream;
 		infstream.zalloc = Z_NULL;
 		infstream.zfree = Z_NULL;
@@ -111,7 +111,7 @@ uint8_t * bsa_manager::load_asset(const std::string file_path) {
 
 }
 
-void bsa_manager::unload_asset_data(const std::string file_path) {
+void bsa_manager::unload_asset_data(const char * file_path) {
 
 	// TODO: handle error when asset does not exist
 	struct bsa_asset *cur_asset = assets[file_path];

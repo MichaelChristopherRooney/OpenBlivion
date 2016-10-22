@@ -34,8 +34,6 @@ bool bsa::load(const char *file_path, std::unordered_map<std::string, struct bsa
 	// free memory that is no longer needed
 	free_unneeded_data();
 
-	//fclose(fp);
-
 	return true;
 
 }
@@ -45,7 +43,7 @@ void bsa::load_file_record_blocks() {
 	uint32_t file_record_blocks_size = header->folder_count * sizeof(struct bsa_file_record_block);
 	file_record_blocks = (struct bsa_file_record_block *) malloc(file_record_blocks_size);
 
-	for (int i = 0; i < header->folder_count; i++) {
+	for (uint32_t i = 0; i < header->folder_count; i++) {
 
 		struct bsa_folder_record *cur_folder_record = &folder_records[i];
 		struct bsa_file_record_block *cur_file_record_block = &file_record_blocks[i];
@@ -82,7 +80,7 @@ void bsa::load_file_names() {
 	int file_names_index = 0;
 	int size = 0;
 
-	for (int i = 0; i < total_file_name_length; i++) {
+	for (uint32_t i = 0; i < total_file_name_length; i++) {
 		if (all_file_names[i] == '\0') {
 			char *cur_pointer = all_file_names + (i - size);
 			file_names[file_names_index] = (char *) malloc((size + 1) * sizeof(char)); // +1 for \0
@@ -105,19 +103,17 @@ here all information for a file is organised into a single asset structure
 */
 void bsa::organise_assets(std::unordered_map<std::string, struct bsa_asset *> *asset_map) {
 
-	assets = (struct bsa_asset *) malloc(header->file_count * sizeof(struct bsa_asset));
-
 	int file_index = 0;
-	for (int i = 0; i < header->folder_count; i++) {
+	for (uint32_t i = 0; i < header->folder_count; i++) {
 
 		char *cur_folder_path = file_record_blocks[i].name;
-		for (int n = 0; n < folder_records[i].count; n++) {
+		for (uint32_t n = 0; n < folder_records[i].count; n++) {
 
-			struct bsa_asset *cur_asset = &assets[file_index];
+			struct bsa_asset *cur_asset = (struct bsa_asset *)malloc(sizeof(struct bsa_asset));
 			struct bsa_file_record *cur_file_record = &file_record_blocks[i].file_records[n];
 			char *cur_file_name = file_names[file_index];
 
-			char *file_path = (char *) malloc(strlen(cur_folder_path) + strlen(cur_file_name) + 2); // +2 for "\\" and '\0'
+			char *file_path = (char *) malloc(strlen(cur_folder_path) + strlen(cur_file_name) + 2); // +2 for "\" and '\0'
 
 			strcpy(file_path, cur_folder_path);
 			strcat(file_path, "\\");
@@ -127,16 +123,14 @@ void bsa::organise_assets(std::unordered_map<std::string, struct bsa_asset *> *a
 
 			fseek(fp, cur_file_record->offset, SEEK_SET);
 			fread(&cur_asset->original_size, sizeof(uint32_t), 1, fp);
-			cur_asset->offset = cur_file_record->offset + 4; // +4 so it directly to the raw data
+			cur_asset->offset = cur_file_record->offset + 4; // +4 so it points directly to the raw data
 			cur_asset->data = NULL; // mark the data as not loaded
-			cur_asset->fp = fp;
+			cur_asset->archive = this;
 
 			const std::string string_key = file_path;
 			asset_map->emplace(string_key, cur_asset);
 
 			free(file_path);
-
-			//printf("%s, %u, %u, %u\n", cur_asset->file_path, cur_asset->compressed_size, cur_asset->original_size, cur_asset->offset);
 
 			file_index++;
 
@@ -172,14 +166,14 @@ we can free the memory used by the other structures
 */
 void bsa::free_unneeded_data() {
 
-	for (int i = 0; i < header->folder_count; i++) {
+	for (uint32_t i = 0; i < header->folder_count; i++) {
 		free(file_record_blocks[i].file_records);
 		free(file_record_blocks[i].name);
 	}
 
 	free(folder_records);
 
-	for (int i = 0; i < header->file_count; i++) {
+	for (uint32_t i = 0; i < header->file_count; i++) {
 		char *cur_file_name = file_names[i];
 		free(cur_file_name);
 	}

@@ -14,7 +14,7 @@ public:
 
 	static std::unordered_map<std::string, GLuint> textures;
 
-	static GLuint load_dds(const std::string file_path);
-	static void unload_dds(const std::string file_path);
+	static GLuint load_dds(const char * file_path);
+	static void unload_dds(const char * file_path);
 
 };

@@ -11,12 +11,14 @@
 
 // for reference documentation see: http://www.uesp.net/wiki/Tes4Mod:BSA_File_Format (8th November 2015 revision)
 
+class bsa;
+
 struct bsa_asset {
 	uint32_t original_size;
 	uint32_t compressed_size; // -1 if the file is not compressed
 	uint32_t offset;
 	uint8_t *data; // NULL if the data is not loaded
-	FILE *fp; // not thread safe but only one thread will be loading assets
+	bsa *archive;
 };
 
 struct bsa_file_record {
@@ -75,8 +77,6 @@ struct bsa_header {
 class bsa {
 
 public:
-
-	struct bsa_asset *assets;
 	uint32_t num_assets;
 	FILE *fp;
 

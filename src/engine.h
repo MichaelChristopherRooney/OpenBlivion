@@ -12,6 +12,7 @@
 #include <src\resource\bsa_manager.h>
 #include <src\config\config.h>
 #include <src\renderer\camera.h>
+#include <src\resource\model.h>
 #include <src\resource\nif.h>
 #include <src\renderer\shader.h>
 #include <src\resource\texture_manager.h>
